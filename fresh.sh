@@ -119,9 +119,11 @@ detect_system() {
     log "Detecting system information..."
 
     if [[ -f /etc/os-release ]]; then
-        source /etc/os-release
-        echo "OS: $PRETTY_NAME"
-        echo "Version: $VERSION_ID"
+        # Read OS info safely without sourcing to avoid readonly variable conflicts
+        local os_name=$(grep '^PRETTY_NAME=' /etc/os-release | cut -d'"' -f2)
+        local os_version=$(grep '^VERSION_ID=' /etc/os-release | cut -d'"' -f2)
+        echo "OS: ${os_name:-Unknown}"
+        echo "Version: ${os_version:-Unknown}"
     fi
 
     echo "Architecture: $(uname -m)"

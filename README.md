@@ -183,6 +183,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
+- Thank you to Daniel Miessler for building and open-sourcing PAI (https://github.com/danielmiessler/PAI)
 - Built for modern Linux productivity workflows
 - Inspired by the need for consistent, reproducible development environments
 - Integrates the best modern CLI tools available
