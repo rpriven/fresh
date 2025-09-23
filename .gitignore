@@ -1,0 +1,55 @@
+# Fresh - Linux Setup Tool .gitignore
+
+# Personal development files
+.tools.txt
+*.txt.backup
+*.bak
+*~
+
+# Log files
+*.log
+fresh-install.log
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+temp/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.lnk
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Personal test scripts
+test-*
+debug-*
+local-*
+
+# Backup and development versions
+*-backup
+*-old
+*-dev
+*-test
+
+# Environment specific
+.env
+.env.local
+.env.*.local
+
+# Archive files (if any get created during development)
+*.tar.gz
+*.zip
+*.rar
