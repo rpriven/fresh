@@ -10,7 +10,7 @@ A comprehensive, interactive installation script for setting up new Linux system
 - **Multiple Installation Tiers**: Choose from Minimal, Standard, Developer, or Full setups
 - **Modern CLI Tools**: Includes the latest productivity tools like `fzf`, `ripgrep`, `bat`, `eza`, `atuin`
 - **Enhanced Shell Configuration**: Advanced aliases and workflows for power users
-- **PAI3 Integration**: Optional Personal AI Infrastructure setup with voice server and Claude integration
+- **PAI Integration**: Optional Personal AI Infrastructure setup with voice server and Claude integration
 - **Interactive Menus**: User-friendly selection process with progress tracking
 - **Smart Detection**: Automatically detects your system and installs appropriate packages
 
@@ -40,12 +40,42 @@ Advanced shell configuration with:
 - **Process Management**: Interactive process browser and management
 - **Smart History**: Atuin integration for intelligent command history
 
-### 🤖 PAI3 Setup
+### 🤖 PAI Setup
 Complete Personal AI Infrastructure including:
 - Voice server with ElevenLabs integration
 - Enhanced Claude Code configuration
 - AI workflow automation tools
 - **Enhanced Shell** configuration included
+
+### 🔒 Security Research Tools
+Fresh provides a solid foundation for security research environments. For comprehensive pentesting and security tools, check out these complementary projects:
+
+#### [toolbelt](https://github.com/rpriven/toolbelt) - Security Tool Installer
+Comprehensive security tool installer with:
+- Full pentesting arsenal for Kali Linux
+- Security essentials for Debian/Ubuntu
+- Interactive menu with pre-built profiles (Bug Bounty, CTF, Full Pentest)
+- APT, Go, Python, Docker, and /opt tools
+- Scripts collection (linpeas, winpeas, PowerView, etc.)
+
+**Best for**: Bug bounty hunting, CTF competitions, penetration testing, security research
+
+#### [tmux-recon](https://github.com/rpriven/tmux-recon) - Pentesting Automation
+Pentesting automation and shell environment with:
+- Advanced tmux configuration for pentesting workflows
+- Zsh setup with security-focused plugins
+- Automated reconnaissance scripts
+- ProjectDiscovery tool integration
+- Oh-my-tmux pentesting environment
+
+**Best for**: Setting up pentesting shell environment, automated recon workflows, security research productivity
+
+#### Recommended Flow for Security Researchers
+1. **Install fresh** (Standard or Developer tier) - Modern CLI foundation
+2. **Install toolbelt** - Comprehensive security tools
+3. **Install tmux-recon** - Pentesting automation & environment
+
+*Run fresh and select option 9 for detailed information about these tools.*
 
 ## 📋 Quick Start
 
@@ -65,15 +95,16 @@ chmod +x fresh.sh
 ┌─────────────────────────────────────────────────────────────────────┐
 │                        FRESH - Linux Setup                         │
 ├─────────────────────────────────────────────────────────────────────┤
-│  1. Minimal    - Essential CLI tools for any Linux system          │
-│  2. Standard   - Minimal + modern productivity tools               │
-│  3. Developer  - Standard + development tools (docker, nodejs)     │
-│  4. Full       - All tools + security, multimedia, system utils    │
-│  5. Custom     - Choose specific tool categories                   │
-│  6. Show Tools - Display available tools by category              │
-│  7. PAI3       - Install Personal AI Infrastructure               │
-│  8. Enhanced Shell - Install enhanced shell commands only         │
-│  0. Exit                                                          │
+│  1. Minimal          - Essential CLI tools for any Linux system    │
+│  2. Standard         - Minimal + modern productivity tools         │
+│  3. Developer        - Standard + development tools                │
+│  4. Full             - All tools + security, multimedia, utils     │
+│  5. Custom           - Choose specific tool categories             │
+│  6. Show Tools       - Display available tools by category         │
+│  7. PAI              - Install Personal AI Infrastructure          │
+│  8. Enhanced Shell   - Install enhanced shell commands only        │
+│  9. Security Research - Info about pentesting & security tools     │
+│  0. Exit                                                           │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -157,7 +188,7 @@ findcmd     # Search available commands
 ### Complete AI Infrastructure
 ```bash
 ./fresh.sh
-# Select option 7: PAI3
+# Select option 7: PAI
 # Installs complete AI infrastructure + enhanced shell
 ```
 

@@ -251,8 +251,9 @@ show_menu() {
     echo
     echo -e "${GREEN}5)${NC} ${WHITE}Custom${NC}     - Select individual categories"
     echo -e "${GREEN}6)${NC} ${WHITE}Show Tools${NC} - Preview what each tier installs"
-    echo -e "${GREEN}7)${NC} ${WHITE}PAI3 Setup${NC} - Install Personal AI Infrastructure v3"
+    echo -e "${GREEN}7)${NC} ${WHITE}PAI Setup${NC} - Install Personal AI Infrastructure v3"
     echo -e "${GREEN}8)${NC} ${WHITE}Enhanced Shell${NC} - Install enhanced shell commands only"
+    echo -e "${GREEN}9)${NC} ${WHITE}Security Research${NC} - Info about pentesting & security tools"
     echo
     echo -e "${RED}0)${NC} Exit"
     echo
@@ -418,8 +419,8 @@ EOF
 }
 
 install_pai3() {
-    echo -e "${CYAN}=== PAI3 PERSONAL AI INFRASTRUCTURE ===${NC}"
-    echo "Setting up Daniel Miessler's PAI3 system"
+    echo -e "${CYAN}=== PAI PERSONAL AI INFRASTRUCTURE ===${NC}"
+    echo "Setting up Daniel Miessler's PAI system"
     echo "This includes voice server, enhanced Claude integration, and AI workflow tools"
     echo
 
@@ -430,14 +431,14 @@ install_pai3() {
         export PATH="$HOME/.bun/bin:$PATH"
     fi
 
-    # Clone PAI3 if not exists
-    if [[ ! -d "$HOME/PAI3" ]]; then
-        echo -e "${YELLOW}Cloning PAI3 repository...${NC}"
-        git clone https://github.com/danielmiessler/PAI.git "$HOME/PAI3"
+    # Clone PAI if not exists
+    if [[ ! -d "$HOME/PAI" ]]; then
+        echo -e "${YELLOW}Cloning PAI repository...${NC}"
+        git clone https://github.com/danielmiessler/PAI.git "$HOME/PAI"
     fi
 
-    # Copy PAI3 components to Claude directory
-    echo -e "${YELLOW}Setting up PAI3 components...${NC}"
+    # Copy PAI components to Claude directory
+    echo -e "${YELLOW}Setting up PAI components...${NC}"
 
     # Backup existing Claude config
     if [[ -d "$HOME/.claude" ]]; then
@@ -448,8 +449,8 @@ install_pai3() {
     # Create Claude directory structure
     mkdir -p "$HOME/.claude"
 
-    # Copy PAI3 components
-    cp -r "$HOME/PAI3/.claude/"* "$HOME/.claude/" 2>/dev/null || true
+    # Copy PAI components
+    cp -r "$HOME/PAI/.claude/"* "$HOME/.claude/" 2>/dev/null || true
 
     # Fix paths in voice server
     sed -i 's|/Users/daniel/|~/.claude/|g' "$HOME/.claude/voice-server/start.sh" 2>/dev/null || true
@@ -457,7 +458,7 @@ install_pai3() {
     # Install enhanced shell configuration
     install_enhanced_shell
 
-    echo -e "${GREEN}✓ PAI3 infrastructure installed${NC}"
+    echo -e "${GREEN}✓ PAI infrastructure installed${NC}"
     echo -e "${CYAN}Next steps:${NC}"
     echo "  1. Configure API keys in ~/.claude/.env"
     echo "  2. Start voice server: ~/.claude/voice-server/start.sh"
@@ -465,6 +466,75 @@ install_pai3() {
     echo "  4. Open Claude Code and enjoy your AI infrastructure!"
     echo
     echo -e "${PURPLE}📖 Learn more: https://github.com/danielmiessler/PAI${NC}"
+}
+
+show_security_info() {
+    clear
+    echo -e "${WHITE}"
+    echo "┌─────────────────────────────────────────────────────────┐"
+    echo "│            🔒 SECURITY RESEARCH TOOLS 🔒                │"
+    echo "└─────────────────────────────────────────────────────────┘"
+    echo -e "${NC}"
+    echo
+    echo -e "${CYAN}Fresh provides a foundation for security research environments.${NC}"
+    echo -e "${CYAN}For advanced security tools, check out these complementary projects:${NC}"
+    echo
+    echo -e "${PURPLE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo
+    echo -e "${GREEN}🛠️  toolbelt${NC} - Comprehensive Security Tool Installer"
+    echo -e "   ${WHITE}https://github.com/rpriven/toolbelt${NC}"
+    echo
+    echo -e "   ${CYAN}What it provides:${NC}"
+    echo "   • Full pentesting arsenal for Kali Linux"
+    echo "   • Security tools for Debian/Ubuntu"
+    echo "   • Interactive menu with pre-built profiles"
+    echo "   • APT, Go, Python, Docker tools"
+    echo "   • Scripts collection (linpeas, winpeas, etc.)"
+    echo
+    echo -e "   ${CYAN}Best for:${NC}"
+    echo "   • Bug bounty hunting"
+    echo "   • CTF competitions"
+    echo "   • Penetration testing"
+    echo "   • Security research & learning"
+    echo
+    echo -e "${PURPLE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo
+    echo -e "${GREEN}🚀 tmux-recon${NC} - Pentesting Automation & Environment"
+    echo -e "   ${WHITE}https://github.com/rpriven/tmux-recon${NC}"
+    echo
+    echo -e "   ${CYAN}What it provides:${NC}"
+    echo "   • Advanced tmux configuration for pentesting workflows"
+    echo "   • Zsh setup with security-focused plugins"
+    echo "   • Automated reconnaissance scripts"
+    echo "   • ProjectDiscovery tool integration"
+    echo "   • Oh-my-tmux pentesting environment"
+    echo
+    echo -e "   ${CYAN}Best for:${NC}"
+    echo "   • Setting up pentesting shell environment"
+    echo "   • Automated recon workflows"
+    echo "   • Security research productivity"
+    echo
+    echo -e "${PURPLE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo
+    echo -e "${YELLOW}💡 Recommended Installation Flow:${NC}"
+    echo
+    echo -e "   ${WHITE}1.${NC} Install fresh (you're here!) - Modern CLI foundation"
+    echo -e "   ${WHITE}2.${NC} Install toolbelt - Comprehensive security tools"
+    echo -e "   ${WHITE}3.${NC} Install tmux-recon - Pentesting automation & environment"
+    echo
+    echo -e "${PURPLE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo
+    echo -e "${CYAN}Quick Start:${NC}"
+    echo
+    echo -e "${WHITE}# Install toolbelt${NC}"
+    echo "git clone https://github.com/rpriven/toolbelt.git && cd toolbelt"
+    echo "python3 toolbelt.py"
+    echo
+    echo -e "${WHITE}# Install tmux-recon${NC}"
+    echo "git clone https://github.com/rpriven/tmux-recon.git && cd tmux-recon"
+    echo "python3 tmux-recon.py --all"
+    echo
+    read -p "Press Enter to continue..." -r
 }
 
 # ==============================================================================
@@ -513,7 +583,7 @@ main() {
 
     while true; do
         show_menu
-        read -p "Select option [1-8, 0 to exit]: " -n 1 -r choice
+        read -p "Select option [1-9, 0 to exit]: " -n 1 -r choice
         echo
         echo
 
@@ -526,6 +596,7 @@ main() {
             6) show_tools ;;
             7) install_pai3; break ;;
             8) install_enhanced_shell; break ;;
+            9) show_security_info ;;
             0)
                 echo "Goodbye! 👋"
                 exit 0
@@ -547,6 +618,18 @@ main() {
     echo
     log_success "Fresh installation completed successfully!"
     echo "Log file: $LOGFILE"
+    echo
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${PURPLE}🔒 Security Researchers:${NC} Check out these complementary tools:"
+    echo
+    echo -e "  ${GREEN}•${NC} ${WHITE}toolbelt${NC} - Comprehensive security tool installer"
+    echo -e "    ${CYAN}https://github.com/rpriven/toolbelt${NC}"
+    echo
+    echo -e "  ${GREEN}•${NC} ${WHITE}tmux-recon${NC} - Pentesting automation & shell environment"
+    echo -e "    ${CYAN}https://github.com/rpriven/tmux-recon${NC}"
+    echo
+    echo -e "  ${YELLOW}💡 Run fresh again and choose option 9 for more details${NC}"
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo
     echo "Recommended next steps:"
     echo "  1. Install your dotfiles: git clone <your-dotfiles-repo>"
