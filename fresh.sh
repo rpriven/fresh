@@ -70,13 +70,18 @@ declare -A STANDARD_TOOLS=(
     [bat]="bat"
     [eza]="eza"
     [ncdu]="ncdu"
+    [gdu]="gdu"
     [btop]="btop"
     [zoxide]="zoxide"
     [atuin]="atuin"
     [most]="most"
     [silversearcher-ag]="silversearcher-ag"
-    [neofetch]="neofetch"
     [gawk]="gawk"
+    [fastfetch]="fastfetch"
+    [stow]="stow"
+    [tealdeer]="tealdeer"
+    [rsync]="rsync"
+    [zsh]="zsh"
 )
 
 # Developer - Development tools and languages
@@ -93,6 +98,9 @@ declare -A DEVELOPER_TOOLS=(
     [entr]="entr"
     [libssl-dev]="libssl-dev"
     [pkg-config]="pkg-config"
+    [gh]="gh"
+    [lazygit]="lazygit"
+    [git-delta]="git-delta"
 )
 
 # Full - Advanced tools, security, multimedia
@@ -104,11 +112,14 @@ declare -A FULL_TOOLS=(
     [ffmpeg]="ffmpeg"
     [yt-dlp]="yt-dlp"
     [bleachbit]="bleachbit"
-    [dust]="dust"
-    [duf]="duf"
-    [procs]="procs"
     [nnn]="nnn"
     [taskwarrior]="taskwarrior"
+    [neovim]="neovim"
+    [mosh]="mosh"
+    [fail2ban]="fail2ban"
+    [ufw]="ufw"
+    [flameshot]="flameshot"
+    [bandwhich]="bandwhich"
 )
 
 # ==============================================================================
@@ -186,12 +197,27 @@ install_tools() {
     fi
 
     log "Installing $category_name tools..."
-    if sudo apt update && sudo apt install -y "${tools_to_install[@]}"; then
-        log_success "$category_name tools installed successfully"
-    else
-        log_error "Failed to install some $category_name tools"
-        return 1
+    sudo apt update
+
+    # Install packages individually to handle failures gracefully
+    local failed_packages=()
+    for package in "${tools_to_install[@]}"; do
+        if sudo apt install -y "$package" 2>&1 | grep -q "Unable to locate package"; then
+            log_warn "Package '$package' not available in repositories - skipping"
+            failed_packages+=("$package")
+        elif ! sudo apt install -y "$package"; then
+            log_warn "Failed to install '$package' - skipping"
+            failed_packages+=("$package")
+        else
+            echo "  ✓ $package installed successfully"
+        fi
+    done
+
+    if [[ ${#failed_packages[@]} -gt 0 ]]; then
+        log_warn "Some packages were skipped: ${failed_packages[*]}"
     fi
+
+    log_success "$category_name tools installation completed (with ${#failed_packages[@]} skipped)"
 }
 
 # ==============================================================================
@@ -206,26 +232,29 @@ install_minimal() {
 }
 
 install_standard() {
+    install_minimal
+    echo
     echo -e "${CYAN}=== STANDARD INSTALLATION ===${NC}"
     echo "Minimal + productivity CLI tools"
     echo
-    install_minimal
     install_tools STANDARD_TOOLS "Standard"
 }
 
 install_developer() {
+    install_standard
+    echo
     echo -e "${CYAN}=== DEVELOPER INSTALLATION ===${NC}"
     echo "Standard + development tools and languages"
     echo
-    install_standard
     install_tools DEVELOPER_TOOLS "Developer"
 }
 
 install_full() {
+    install_developer
+    echo
     echo -e "${CYAN}=== FULL INSTALLATION ===${NC}"
     echo "Everything + security tools, multimedia, advanced utilities"
     echo
-    install_developer
     install_tools FULL_TOOLS "Full"
 }
 
@@ -251,10 +280,11 @@ show_menu() {
     echo
     echo -e "${GREEN}5)${NC} ${WHITE}Custom${NC}     - Select individual categories"
     echo -e "${GREEN}6)${NC} ${WHITE}Show Tools${NC} - Preview what each tier installs"
-    echo -e "${GREEN}7)${NC} ${WHITE}PAI Setup${NC} - Install Personal AI Infrastructure v3"
-    echo -e "${GREEN}8)${NC} ${WHITE}Enhanced Shell${NC} - Install enhanced shell commands only"
-    echo -e "${GREEN}9)${NC} ${WHITE}Security Research${NC} - Info about pentesting & security tools"
+    echo -e "${GREEN}7)${NC} ${WHITE}Manual Tools${NC} - Install helix, yazi, glow, lazydocker, nerd-fonts (from GitHub)"
+    echo -e "${GREEN}8)${NC} ${WHITE}PAI Setup${NC} - Install Personal AI Infrastructure v3"
+    echo -e "${GREEN}9)${NC} ${WHITE}Enhanced Shell${NC} - Install enhanced shell commands only"
     echo
+    echo -e "${YELLOW}i)${NC} Security Research Info"
     echo -e "${RED}0)${NC} Exit"
     echo
 }
@@ -561,7 +591,255 @@ post_install_setup() {
         fi
     fi
 
+    # Create bat symlink if batcat exists but bat doesn't
+    if command -v batcat &>/dev/null && ! command -v bat &>/dev/null; then
+        log "Creating bat symlink for batcat..."
+        mkdir -p ~/.local/bin
+        ln -sf /usr/bin/batcat ~/.local/bin/bat
+        log_success "bat symlink created (~/.local/bin/bat -> /usr/bin/batcat)"
+    fi
+
+    # Create fd symlink if fdfind exists but fd doesn't (Debian naming issue)
+    if command -v fdfind &>/dev/null && ! command -v fd &>/dev/null; then
+        log "Creating fd symlink for fdfind (Debian naming fix)..."
+        mkdir -p ~/.local/bin
+        ln -sf /usr/bin/fdfind ~/.local/bin/fd
+        log_success "fd symlink created (~/.local/bin/fd -> /usr/bin/fdfind)"
+        log_warn "This fixes fzf integration issues on Debian"
+    fi
+
+    # Install tealdeer cache if available
+    if command -v tldr &>/dev/null; then
+        log "Updating tealdeer (tldr) cache..."
+        tldr --update || log_warn "Failed to update tldr cache - run 'tldr --update' manually"
+    fi
+
     log_success "Post-installation setup completed"
+}
+
+# ==============================================================================
+# Manual Install Functions (tools not in apt)
+# ==============================================================================
+
+install_manual_tools() {
+    echo -e "${CYAN}=== MANUAL TOOLS INSTALLATION ===${NC}"
+    echo "Installing tools not available via apt"
+    echo
+
+    read -p "Install Helix editor? [Y/n] " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
+        install_helix
+    fi
+
+    read -p "Install yazi (terminal file manager)? [Y/n] " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
+        install_yazi
+    fi
+
+    read -p "Install glow (markdown viewer)? [Y/n] " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
+        install_glow
+    fi
+
+    read -p "Install lazydocker? [Y/n] " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
+        install_lazydocker
+    fi
+
+    read -p "Install Nerd Fonts (for terminal icons)? [Y/n] " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
+        install_nerd_fonts
+    fi
+}
+
+install_helix() {
+    log "Installing Helix editor (AppImage)..."
+
+    # Known working version (update periodically)
+    local HELIX_VERSION="25.07.1"
+    local HELIX_URL="https://github.com/helix-editor/helix/releases/download/${HELIX_VERSION}/helix-${HELIX_VERSION}-x86_64.AppImage"
+
+    # Try to get latest from API first (may fail due to rate limits)
+    local latest_url=$(curl -sf https://api.github.com/repos/helix-editor/helix/releases/latest 2>/dev/null | grep "browser_download_url.*x86_64.*\.AppImage\"" | grep -v zsync | cut -d '"' -f 4 | head -1)
+
+    # Use API result if available, otherwise fall back to known version
+    if [[ -n "$latest_url" ]]; then
+        log "Found latest release via API"
+        HELIX_URL="$latest_url"
+    else
+        log_warn "GitHub API unavailable, using known version ${HELIX_VERSION}"
+    fi
+
+    mkdir -p ~/.local/bin
+
+    log "Downloading Helix AppImage from: $HELIX_URL"
+    if ! curl -fL "$HELIX_URL" -o ~/.local/bin/helix.appimage; then
+        log_error "Failed to download Helix AppImage"
+        return 1
+    fi
+
+    log "Making executable..."
+    chmod +x ~/.local/bin/helix.appimage
+
+    log "Creating symlink..."
+    ln -sf ~/.local/bin/helix.appimage ~/.local/bin/hx
+
+    log_success "Helix AppImage installed successfully! Run 'hx' to start."
+    log_warn "Make sure ~/.local/bin is in your PATH"
+}
+
+install_helix_tarball() {
+    # Fallback to tarball if AppImage not available
+    log "Installing Helix from tarball..."
+
+    local latest_url=$(curl -s https://api.github.com/repos/helix-editor/helix/releases/latest | grep "browser_download_url.*x86_64.*linux.*tar" | cut -d '"' -f 4)
+
+    if [[ -z "$latest_url" ]]; then
+        log_error "Failed to find Helix release"
+        return 1
+    fi
+
+    local temp_dir=$(mktemp -d)
+    cd "$temp_dir"
+
+    log "Downloading Helix tarball..."
+    curl -L "$latest_url" -o helix.tar.gz
+
+    log "Extracting..."
+    tar xzf helix.tar.gz
+
+    local helix_dir=$(find . -maxdepth 1 -type d -name "helix-*" | head -n1)
+
+    log "Installing to ~/.local/bin..."
+    mkdir -p ~/.local/bin
+    cp "$helix_dir/hx" ~/.local/bin/
+    chmod +x ~/.local/bin/hx
+
+    log "Installing runtime files..."
+    mkdir -p ~/.config/helix
+    cp -r "$helix_dir/runtime" ~/.config/helix/
+
+    cd - > /dev/null
+    rm -rf "$temp_dir"
+
+    log_success "Helix installed successfully!"
+}
+
+install_yazi() {
+    log "Installing yazi (terminal file manager)..."
+
+    mkdir -p ~/.local/bin
+    local temp_dir=$(mktemp -d)
+    cd "$temp_dir"
+
+    log "Downloading yazi v25.5.31..."
+    wget -q https://github.com/sxyazi/yazi/releases/download/v25.5.31/yazi-x86_64-unknown-linux-gnu.zip -O yazi.zip
+
+    log "Extracting..."
+    unzip -q yazi.zip
+
+    log "Installing to ~/.local/bin..."
+    mv yazi-x86_64-unknown-linux-gnu/yazi ~/.local/bin/
+    chmod +x ~/.local/bin/yazi
+
+    cd - > /dev/null
+    rm -rf "$temp_dir"
+
+    log_success "yazi installed successfully! (~/.local/bin/yazi)"
+    log_warn "Make sure ~/.local/bin is in your PATH"
+}
+
+install_glow() {
+    log "Installing glow (markdown viewer)..."
+
+    mkdir -p ~/.local/bin
+    local temp_dir=$(mktemp -d)
+    cd "$temp_dir"
+
+    log "Downloading glow v2.1.1..."
+    wget -q https://github.com/charmbracelet/glow/releases/download/v2.1.1/glow_2.1.1_Linux_x86_64.tar.gz
+
+    log "Extracting..."
+    tar xzf glow_2.1.1_Linux_x86_64.tar.gz
+
+    log "Installing to ~/.local/bin..."
+    mv glow_2.1.1_Linux_x86_64/glow ~/.local/bin/
+    chmod +x ~/.local/bin/glow
+
+    cd - > /dev/null
+    rm -rf "$temp_dir"
+
+    log_success "glow installed successfully! (~/.local/bin/glow)"
+    log_warn "Make sure ~/.local/bin is in your PATH"
+}
+
+install_lazydocker() {
+    log "Installing lazydocker..."
+
+    local temp_dir=$(mktemp -d)
+    cd "$temp_dir"
+
+    log "Downloading lazydocker install script..."
+    curl -s https://raw.githubusercontent.com/jesseduffield/lazydocker/master/scripts/install_update_linux.sh | bash
+
+    cd - > /dev/null
+    rm -rf "$temp_dir"
+
+    log_success "lazydocker installed successfully!"
+}
+
+install_nerd_fonts() {
+    log "Installing Nerd Fonts for terminal icons..."
+
+    local fonts_dir="$HOME/.local/share/fonts"
+    local temp_dir=$(mktemp -d)
+    mkdir -p "$fonts_dir"
+
+    cd "$temp_dir"
+
+    # Array of popular Nerd Fonts
+    local fonts=(
+        "JetBrainsMono"
+        "FiraCode"
+        "Hack"
+        "Meslo"
+        "UbuntuMono"
+    )
+
+    for font in "${fonts[@]}"; do
+        log "Downloading $font Nerd Font..."
+        local url="https://github.com/ryanoasis/nerd-fonts/releases/latest/download/${font}.zip"
+
+        if curl -fsSL "$url" -o "${font}.zip"; then
+            log "Extracting $font..."
+            unzip -q "${font}.zip" -d "$font" || true
+
+            log "Installing $font..."
+            cp "$font"/*.ttf "$fonts_dir/" 2>/dev/null || true
+            cp "$font"/*.otf "$fonts_dir/" 2>/dev/null || true
+            echo "  ✓ $font installed"
+        else
+            log_warn "Failed to download $font (skipping)"
+        fi
+    done
+
+    log "Updating font cache..."
+    fc-cache -fv "$fonts_dir" &>/dev/null || true
+
+    cd - > /dev/null
+    rm -rf "$temp_dir"
+
+    log_success "Nerd Fonts installed successfully!"
+    echo
+    echo "Configure your terminal to use a Nerd Font:"
+    echo "  Konsole: Settings → Edit Profile → Appearance → Font"
+    echo "  Ghostty: ~/.config/ghostty/config → font-family = JetBrainsMono Nerd Font"
+    echo "  Verify: fc-list | grep -i nerd"
 }
 
 # ==============================================================================
@@ -583,7 +861,7 @@ main() {
 
     while true; do
         show_menu
-        read -p "Select option [1-9, 0 to exit]: " -n 1 -r choice
+        read -p "Select option [1-9, i, 0 to exit]: " -r choice
         echo
         echo
 
@@ -594,9 +872,10 @@ main() {
             4) install_full; break ;;
             5) custom_install; break ;;
             6) show_tools ;;
-            7) install_pai3; break ;;
-            8) install_enhanced_shell; break ;;
-            9) show_security_info ;;
+            7) install_manual_tools; break ;;
+            8) install_pai3; break ;;
+            9) install_enhanced_shell; break ;;
+            i|I) show_security_info ;;
             0)
                 echo "Goodbye! 👋"
                 exit 0
