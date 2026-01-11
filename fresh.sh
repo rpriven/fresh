@@ -73,7 +73,6 @@ declare -A STANDARD_TOOLS=(
     [gdu]="gdu"
     [btop]="btop"
     [zoxide]="zoxide"
-    [atuin]="atuin"
     [most]="most"
     [silversearcher-ag]="silversearcher-ag"
     [gawk]="gawk"
@@ -280,7 +279,7 @@ show_menu() {
     echo
     echo -e "${GREEN}5)${NC} ${WHITE}Custom${NC}     - Select individual categories"
     echo -e "${GREEN}6)${NC} ${WHITE}Show Tools${NC} - Preview what each tier installs"
-    echo -e "${GREEN}7)${NC} ${WHITE}Manual Tools${NC} - Install helix, yazi, glow, lazydocker, nerd-fonts (from GitHub)"
+    echo -e "${GREEN}7)${NC} ${WHITE}Manual Tools${NC} - Install helix, yazi, glow, lazydocker, nerd-fonts, gitleaks, atuin (from GitHub)"
     echo -e "${GREEN}8)${NC} ${WHITE}PAI Setup${NC} - Install Personal AI Infrastructure v3"
     echo -e "${GREEN}9)${NC} ${WHITE}Enhanced Shell${NC} - Install enhanced shell commands only"
     echo
@@ -655,6 +654,18 @@ install_manual_tools() {
     if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
         install_nerd_fonts
     fi
+
+    read -p "Install gitleaks (secret scanner for git)? [Y/n] " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
+        install_gitleaks
+    fi
+
+    read -p "Install atuin (smart shell history)? [Y/n] " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
+        install_atuin
+    fi
 }
 
 install_helix() {
@@ -686,8 +697,21 @@ install_helix() {
     log "Making executable..."
     chmod +x ~/.local/bin/helix.appimage
 
-    log "Creating symlink..."
+    log "Creating user symlink..."
     ln -sf ~/.local/bin/helix.appimage ~/.local/bin/hx
+
+    # Offer to create system-wide symlink for sudo access
+    echo
+    read -p "Create system-wide symlink for sudo access? (requires sudo) [Y/n] " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
+        if sudo ln -sf "$HOME/.local/bin/hx" /usr/local/bin/hx 2>/dev/null; then
+            log_success "System symlink created: /usr/local/bin/hx"
+        else
+            log_warn "Could not create system symlink. Run manually:"
+            echo "  sudo ln -s ~/.local/bin/hx /usr/local/bin/hx"
+        fi
+    fi
 
     log_success "Helix AppImage installed successfully! Run 'hx' to start."
     log_warn "Make sure ~/.local/bin is in your PATH"
@@ -840,6 +864,151 @@ install_nerd_fonts() {
     echo "  Konsole: Settings → Edit Profile → Appearance → Font"
     echo "  Ghostty: ~/.config/ghostty/config → font-family = JetBrainsMono Nerd Font"
     echo "  Verify: fc-list | grep -i nerd"
+}
+
+install_gitleaks() {
+    log "Installing gitleaks (secret scanner for git)..."
+
+    # Gitleaks version - update periodically
+    local GITLEAKS_VERSION="8.21.2"
+    local ARCH="x64"
+
+    # Detect architecture
+    case $(uname -m) in
+        x86_64) ARCH="x64" ;;
+        aarch64|arm64) ARCH="arm64" ;;
+        armv7l) ARCH="armv7" ;;
+        *) log_error "Unsupported architecture: $(uname -m)"; return 1 ;;
+    esac
+
+    local GITLEAKS_URL="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_${ARCH}.tar.gz"
+
+    mkdir -p ~/.local/bin
+
+    local temp_dir=$(mktemp -d)
+    cd "$temp_dir"
+
+    log "Downloading gitleaks v${GITLEAKS_VERSION}..."
+    if ! curl -fsSL "$GITLEAKS_URL" -o gitleaks.tar.gz; then
+        log_error "Failed to download gitleaks"
+        cd - > /dev/null
+        rm -rf "$temp_dir"
+        return 1
+    fi
+
+    log "Extracting..."
+    tar xzf gitleaks.tar.gz
+
+    log "Installing to ~/.local/bin..."
+    mv gitleaks ~/.local/bin/
+    chmod +x ~/.local/bin/gitleaks
+
+    cd - > /dev/null
+    rm -rf "$temp_dir"
+
+    # Set up global git template with pre-commit hook
+    log "Setting up git pre-commit hook template..."
+    mkdir -p ~/.git-templates/hooks
+    mkdir -p ~/.config/gitleaks
+
+    # Create the pre-commit hook
+    cat > ~/.git-templates/hooks/pre-commit << 'HOOK'
+#!/bin/bash
+# Gitleaks pre-commit hook - scans for secrets before every commit
+
+if ! command -v gitleaks &> /dev/null; then
+    echo "⚠️  gitleaks not installed, skipping secret scan"
+    exit 0
+fi
+
+CONFIG_ARG=""
+if [ -f ".gitleaks.toml" ]; then
+    CONFIG_ARG="-c .gitleaks.toml"
+elif [ -f "${HOME}/.config/gitleaks/gitleaks.toml" ]; then
+    CONFIG_ARG="-c ${HOME}/.config/gitleaks/gitleaks.toml"
+fi
+
+echo "🔍 Scanning staged changes for secrets..."
+gitleaks git --staged --pre-commit --verbose $CONFIG_ARG
+
+if [ $? -eq 1 ]; then
+    echo ""
+    echo "🚨 SECRETS DETECTED! Commit blocked."
+    echo ""
+    echo "Options:"
+    echo "  1. Remove the secret from the file"
+    echo "  2. Add to .gitleaksignore if false positive"
+    echo "  3. Use --no-verify to bypass (NOT RECOMMENDED)"
+    echo ""
+    exit 1
+fi
+exit 0
+HOOK
+
+    chmod +x ~/.git-templates/hooks/pre-commit
+
+    # Configure git to use template
+    git config --global init.templateDir ~/.git-templates
+
+    log_success "gitleaks installed successfully!"
+    echo
+    echo "Secret scanning is now active:"
+    echo "  • New repos (git init) automatically get the pre-commit hook"
+    echo "  • Existing repos: cp ~/.git-templates/hooks/pre-commit .git/hooks/"
+    echo "  • Global config: ~/.config/gitleaks/gitleaks.toml"
+    echo "  • Test: echo 'api_key=\"sk-test123\"' > test.txt && git add test.txt && git commit -m test"
+}
+
+install_atuin() {
+    log "Installing atuin (smart shell history)..."
+
+    # Check if already installed
+    if command -v atuin &>/dev/null; then
+        log_warn "atuin is already installed: $(atuin --version)"
+        return 0
+    fi
+
+    # Use official installer (works on all distros)
+    log "Downloading and running atuin installer..."
+    if ! curl --proto '=https' --tlsv1.2 -LsSf https://setup.atuin.sh | sh; then
+        log_error "Failed to install atuin"
+        return 1
+    fi
+
+    # Source the env to get atuin in PATH for this session
+    if [[ -f "$HOME/.atuin/bin/env" ]]; then
+        source "$HOME/.atuin/bin/env"
+    fi
+
+    local ATUIN_BIN="$HOME/.atuin/bin/atuin"
+
+    # Initialize for current shell
+    if [[ -n "${ZSH_VERSION:-}" ]]; then
+        log "Initializing atuin for zsh..."
+        mkdir -p ~/.config/atuin
+        "$ATUIN_BIN" init zsh --disable-up-arrow > ~/.config/atuin/init.zsh 2>/dev/null || true
+    elif [[ -n "${BASH_VERSION:-}" ]]; then
+        log "Initializing atuin for bash..."
+        mkdir -p ~/.config/atuin
+        "$ATUIN_BIN" init bash --disable-up-arrow > ~/.config/atuin/init.bash 2>/dev/null || true
+    fi
+
+    # Import existing history
+    log "Importing existing shell history..."
+    "$ATUIN_BIN" import auto 2>/dev/null || true
+
+    log_success "atuin installed successfully!"
+    echo
+    echo "Add to your shell config (.zshrc, .bashrc, or .exports):"
+    echo
+    echo "  # Atuin PATH"
+    echo "  export PATH=\"\$HOME/.atuin/bin:\$PATH\""
+    echo "  eval \"\$(atuin init zsh --disable-up-arrow)\"  # or bash"
+    echo
+    echo "Or source the env file:"
+    echo "  source \"\$HOME/.atuin/bin/env\""
+    echo
+    echo "Usage: Press Ctrl+R for smart history search"
 }
 
 # ==============================================================================
